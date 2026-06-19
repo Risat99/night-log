@@ -6,26 +6,32 @@ const MONTH_NAMES = ['January','February','March','April','May','June','July','A
 const SHIFT_EPOCH = 12*60; // re-base the clock at noon so overnight shifts don't wrap mid-chart
 
 const hasRealStorage = !!(window.storage && window.storage.get && window.storage.set && window.storage.list);
-const memStore = {};
 const storageApi = {
   async get(key, shared=false){
     if (hasRealStorage) return window.storage.get(key, shared);
-    if (!(key in memStore)) throw new Error('not found');
-    return { key, value: memStore[key], shared };
+    const val = localStorage.getItem(key);
+    if (val === null) throw new Error('not found');
+    return { key, value: val, shared };
   },
   async set(key, value, shared=false){
     if (hasRealStorage) return window.storage.set(key, value, shared);
-    memStore[key] = value;
+    localStorage.setItem(key, value);
     return { key, value, shared };
   },
   async delete(key, shared=false){
     if (hasRealStorage) return window.storage.delete(key, shared);
-    delete memStore[key];
+    localStorage.removeItem(key);
     return { key, deleted:true, shared };
   },
   async list(prefix='', shared=false){
     if (hasRealStorage) return window.storage.list(prefix, shared);
-    const keys = Object.keys(memStore).filter(k => !prefix || k.startsWith(prefix));
+    const keys = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!prefix || k.startsWith(prefix)) {
+        keys.push(k);
+      }
+    }
     return { keys, prefix, shared };
   }
 };

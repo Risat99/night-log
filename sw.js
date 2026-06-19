@@ -1,4 +1,4 @@
-const CACHE_NAME = 'night-log-v5';
+const CACHE_NAME = 'night-log-v6';
 const ASSETS = [
   './index.html',
   './manifest.json',
