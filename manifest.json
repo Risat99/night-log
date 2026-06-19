@@ -1,0 +1,17 @@
+{
+  "name": "Night Log",
+  "short_name": "Night Log",
+  "description": "Time Report Decoded",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0A0D1A",
+  "theme_color": "#0A0D1A",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

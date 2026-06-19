@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Night Log — Time Report Decoded</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0A0D1A">
+<link rel="apple-touch-icon" href="./icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW failed', e));
+    });
+  }
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<!-- External Stylesheet -->
+<link rel="stylesheet" href="./styles.css">
+
+<!-- External Dependencies -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<div id="scroll-progress"></div>
+<canvas id="bg-canvas"></canvas>
+<div class="bg-gradient"></div>
+
+<div class="wrap">
+
+  <header class="topbar">
+    <div>
+      <div class="eyebrow">Time report · decoded</div>
+      <h1>Night Log</h1>
+    </div>
+    <div class="topbar-actions">
+      <div class="month-tabs" id="monthTabs"></div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <button class="btn" id="importBtn" aria-label="Import a new month's report">⤒ Import month</button>
+        <button class="btn btn-text" id="clearBtn" aria-label="Clear all stored months">Clear</button>
+      </div>
+      <input type="file" id="fileInput" accept=".txt" hidden />
+      <div class="meta-line" id="metaLine"></div>
+    </div>
+  </header>
+
+  <div id="banner" class="banner" hidden></div>
+  <div id="toast" class="toast" hidden></div>
+
+  <main id="app">
+    <div class="loading" id="loadingState">loading your report…</div>
+  </main>
+</div>
+
+<!-- Application Scripts -->
+<script src="./js/app.js"></script>
+<script src="./js/charts.js"></script>
+<script src="./js/threeBg.js"></script>
+</body>
+</html>
