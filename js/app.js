@@ -35,7 +35,7 @@ const state = { view: 'MONTH', overviewSelection: null, months:{}, activeMonth:n
 /* =========================================================
    EMBEDDED SEED DATA (your first imported report)
    ========================================================= */
-const EMBEDDED_RAW = "Employee ID\tStore\tWorking Date\tPunch IN\tPunch Out\tReg Hours\tOvertime\tIrregular updates\tTime Off\tDay Off\tTotal Hours\tShif\tShift Start Time\tShift End Time\tAdditional Reg Hrs\tAdditional OT Hrs\tDeduction Reg Hrs\tDeduction OT Hrs\n57225\t0001830079\t01.05.2026\t20:52\t10:21\t08:00\t04:28\t\t\t\t12:28\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t02.05.2026\t20:15\t10:24\t08:00\t05:00\t\t\t\t13:00\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t03.05.2026\t20:19\t10:33\t08:00\t05:00\t\t\t\t13:00\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t04.05.2026\t20:14\t10:39\t08:00\t05:00\t\t\t\t13:00\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t05.05.2026\t20:15\t10:28\t08:00\t05:00\t\t\t\t13:00\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t06.05.2026\t21:24\t11:19\t08:00\t04:55\t\t\t\t12:55\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t07.05.2026\t20:21\t10:21\t08:00\t04:59\t\t\t\t12:59\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t08.05.2026\t\t\t\t\t\t\t\t00:00\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t09.05.2026\t20:12\t10:24\t08:00\t05:00\t\t\t\t13:00\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t10.05.2026\t20:05\t10:28\t08:00\t05:00\t\t\t\t13:00\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t11.05.2026\t00:03\t10:24\t08:00\t01:21\t\t\t\t09:21\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t12.05.2026\t20:07\t10:23\t08:00\t05:00\t\t\t\t13:00\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t13.05.2026\t21:09\t11:17\t08:00\t05:00\t\t\t\t13:00\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t14.05.2026\t20:10\t10:12\t08:00\t05:00\t\t\t\t13:00\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t15.05.2026\t\t\t\t\t\t\t\t00:00\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t16.05.2026\t20:16\t10:23\t08:00\t05:00\t\t\t\t13:00\tCL4\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t17.05.2026\t20:12\t10:22\t08:00\t05:00\t\t\t\t13:00\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t18.05.2026\t20:09\t10:25\t08:00\t05:00\t\t\t\t13:00\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t19.05.2026\t20:13\t10:27\t08:00\t05:00\t\t\t\t13:00\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t20.05.2026\t21:18\t11:18\t08:00\t05:00\t\t\t\t13:00\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t21.05.2026\t20:13\t10:21\t08:00\t05:00\t\t\t\t13:00\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t22.05.2026\t\t\t\t\t\t\t\t00:00\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t23.05.2026\t20:10\t10:15\t08:00\t05:00\t\t\t\t13:00\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t24.05.2026\t20:07\t10:23\t08:00\t05:00\t\t\t\t13:00\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t25.05.2026\t20:13\t11:16\t08:00\t05:00\t\t\t\t13:00\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t26.05.2026\t21:10\t11:21\t08:00\t13:10\tEid Holiday\t\t\t21:10\tEID5\t00:00\t00:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t27.05.2026\t21:07\t11:19\t08:00\t05:00\t\t\t\t13:00\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t28.05.2026\t21:12\t11:22\t08:00\t05:00\t\t\t\t13:00\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t29.05.2026\t21:13\t10:23\t08:00\t04:09\t\t\t\t12:09\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t30.05.2026\t20:10\t10:16\t08:00\t05:00\t\t\t\t13:00\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n57225\t0001830079\t31.05.2026\t20:18\t10:16\t08:00\t04:58\t\t\t40.00 \t12:58\tFLEX\t00:00\t09:00\t00:00\t00:00\t00:00\t00:00\n";
+// Default fallback data removed
 
 /* =========================================================
    PARSING
@@ -686,8 +686,21 @@ if (importBtn && fileInput) {
 }
 
 if (clearBtn) {
+  let clearTimer = null;
   clearBtn.addEventListener('click', async ()=>{
-    if (!confirm('Clear every saved month? This cannot be undone.')) return;
+    if (clearBtn.textContent.trim() === 'Clear') {
+      clearBtn.textContent = 'Sure?';
+      clearBtn.style.color = 'var(--bad)';
+      clearTimer = setTimeout(() => {
+        clearBtn.textContent = 'Clear';
+        clearBtn.style.color = '';
+      }, 3000);
+      return;
+    }
+    clearTimeout(clearTimer);
+    clearBtn.textContent = 'Clear';
+    clearBtn.style.color = '';
+
     try{
       for (const k of Object.keys(state.months)){
         await storageApi.delete(STORAGE_PREFIX+k, false);
@@ -720,15 +733,7 @@ async function init(){
     }
   }catch(e){ console.warn('storage list failed', e); }
 
-  if (Object.keys(months).length === 0){
-    try{
-      const rows = parseReportText(EMBEDDED_RAW);
-      const mk = monthKeyFromRows(rows);
-      const payload = { rows, savedAt: new Date().toISOString() };
-      await storageApi.set(STORAGE_PREFIX+mk, JSON.stringify(payload), false);
-      months[mk] = payload;
-    }catch(e){ console.error('seed failed', e); }
-  }
+  // Default data loading has been removed
 
   state.months = months;
   const keys = Object.keys(months).sort();
