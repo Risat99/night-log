@@ -10,9 +10,19 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script>
+  // Clean up all cached files and stale service workers
+  if ('caches' in window) {
+    caches.keys().then(names => {
+      for (const name of names) {
+        caches.delete(name);
+      }
+    });
+  }
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(e => console.warn('SW failed', e));
+    navigator.serviceWorker.getRegistrations().then(regs => {
+      for (const reg of regs) {
+        reg.unregister();
+      }
     });
   }
 </script>
@@ -58,8 +68,8 @@
 </div>
 
 <!-- Application Scripts -->
-<script src="./js/app.js"></script>
-<script src="./js/charts.js"></script>
-<script src="./js/threeBg.js"></script>
+<script src="./js/app.js?v=20"></script>
+<script src="./js/charts.js?v=20"></script>
+<script src="./js/threeBg.js?v=20"></script>
 </body>
 </html>

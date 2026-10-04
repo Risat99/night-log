@@ -126,6 +126,7 @@ function summarize(rows){
   let longest=null, holiday=null;
   const punchInPts=[], punchOutPts=[];
   let totalPhysicalMins=0, totalWasteMins=0, holidayWorkedMins=0;
+  let holidayRegMins=0, shortShiftMins=0, sickLeaveDays=0;
 
   const dayOffVal = state.settings.dayOff;
 
@@ -140,12 +141,16 @@ function summarize(rows){
     const pin = toMinutes(r.punchIn);
     const pout = toMinutes(r.punchOut);
     const hasPunch = pin != null || pout != null;
+    const hasAddHours = addReg > 0 || addOt > 0;
+    const isSickLeave = (r.irregular && /sick/i.test(r.irregular)) || (r.timeOff && /sick/i.test(r.timeOff));
+    const isPublicHoliday = !!r.irregular && !isSickLeave;
     const isHoliday = !!r.irregular;
     const d = dateObj(r.date);
     const isDayOff = d.getDay() === dayOffVal;
 
-    if (hasPunch) worked++; else rest++;
-    if (!hasPunch && !isHoliday && !isDayOff) absences++;
+    if (hasPunch || hasAddHours) worked++; else rest++;
+    if (!hasPunch && !isPublicHoliday && !isSickLeave && !isDayOff && !hasAddHours) absences++;
+    if (isSickLeave) sickLeaveDays++;
 
     let waste = 0, phys = 0;
     if (pin != null && pout != null) {
@@ -159,10 +164,17 @@ function summarize(rows){
       totalWasteMins += waste;
     }
     r._waste = waste;
-    r._isAbsence = (!hasPunch && !isHoliday && !isDayOff);
+    r._isAbsence = (!hasPunch && !isPublicHoliday && !isSickLeave && !isDayOff && !hasAddHours);
+    r._isSickLeave = isSickLeave;
+    r._hasAddHours = hasAddHours;
 
-    if (isHoliday && hasPunch) {
+    if (isPublicHoliday && hasPunch) {
       holidayWorkedMins += tot;
+      holidayRegMins += reg;
+    }
+
+    if (hasPunch && !isPublicHoliday && !isSickLeave && !isDayOff && reg > 0 && reg < 480) {
+      shortShiftMins += (480 - reg);
     }
 
     if (!longest || tot > longest.minutes) longest = { date:r.date, minutes:tot };
@@ -180,19 +192,32 @@ function summarize(rows){
     regMin, otMin, addRegMin, addOtMin, dedRegMin, dedOtMin, totalMin,
     worked, rest, absences, days: rows.length, longest, holiday,
     totalPhysicalMins, totalWasteMins, holidayWorkedMins,
+    holidayRegMins, shortShiftMins, sickLeaveDays,
     punchInPts, punchOutPts, avgPunchIn, avgPunchOut, avgShiftLen
   };
 }
 
 function renderStatGrid(summary){
+  const details = calculatePayDetails(summary, state.activeMonth);
   const items = [
+    { label:'Total Basic (Earned)', value: `${details.totalBasicHrs.toFixed(1)}h`, sub: details.totalBasicHrs > 240 ? 'Includes extra basic' : 'Standard monthly' },
+    { label:'Total OT', value: fmtHM(details.totalOtHrs * 60), sub: 'Overtime + Add' },
     { label:'Total hours', value: fmtHM(summary.totalMin) },
     { label:'Waste time', value: fmtHM(summary.totalWasteMins) },
-    { label:'Absences', value: `${summary.absences} days`, sub: summary.absences ? `-${fmtHM(summary.absences * 8 * 60)} base` : '' },
+    { label:'Absences', value: `${summary.absences} days`, sub: details.waivedAbsentHrs > 0 ? 'Forgiven' : (details.billableAbsences > 0 ? `-${fmtHM(details.billableAbsences * 8 * 60)} base` : 'No deduction') },
     { label:'Nights worked', value: `${summary.worked}/${summary.days}` },
     { label:'Rest days', value: `${summary.rest}` },
     { label:'Longest shift', value: summary.longest ? fmtHM(summary.longest.minutes) : '—', sub: summary.longest ? formatDate(summary.longest.date) : '' }
   ];
+  if (summary.sickLeaveDays > 0){
+    items.push({ label:'Sick leave', value: `${summary.sickLeaveDays} day${summary.sickLeaveDays>1?'s':''}`, sub: 'Paid basic' });
+  }
+  if (summary.shortShiftMins > 0){
+    items.push({ label:'Short shifts', value: fmtHM(summary.shortShiftMins), sub: 'Under 8h regular' });
+  }
+  if (summary.holidayRegMins > 0){
+    items.push({ label:'Holiday OT bonus', value: fmtHM(summary.holidayRegMins), sub: 'Reg hrs \u2192 OT rate' });
+  }
   if (summary.addRegMin || summary.addOtMin){
     items.push({ label:'Additional hours', value: fmtHM(summary.addRegMin+summary.addOtMin) });
   }
@@ -239,10 +264,14 @@ function renderTable(rows){
   tbody.innerHTML = rows.map(r=>{
     const noPunch = !r.punchIn && !r.punchOut;
     let notes = '';
-    if (r.irregular) {
+    if (r._isSickLeave) {
+      notes = `<span class="tag" style="background:rgba(95,217,160,0.15);color:var(--good);">Sick Leave</span>`;
+    } else if (r.irregular) {
       notes = `<span class="tag holiday">${String(r.irregular).replace(/[&<>"']/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[s])}</span>`;
     } else if (r._isAbsence) {
       notes = `<span class="tag" style="background:rgba(255,107,107,0.15);color:var(--bad);">Absent</span>`;
+    } else if (noPunch && r._hasAddHours) {
+      notes = `<span class="tag" style="background:rgba(255,179,71,0.15);color:var(--amber);">Manual add</span>`;
     } else if (noPunch) {
       notes = `<span class="tag off">Day off</span>`;
     }
@@ -271,20 +300,67 @@ function renderTable(rows){
 
 function calculatePayDetails(summary, monthKey) {
   const s = state.settings;
-  const [y, m] = monthKey.split('-');
+  const [y, m] = monthKey.split('-').map(Number);
   const daysInMonth = new Date(y, m, 0).getDate();
-  const dynamicRate = s.base / (daysInMonth * 8);
   
-  const basePay = s.base;
-  const absentDed = summary.absences * 8 * dynamicRate;
-  const otPay = (summary.otMin/60) * dynamicRate * s.otMult;
-  const addPay = ((summary.addRegMin/60)*dynamicRate) + ((summary.addOtMin/60)*dynamicRate*s.otMult);
-  const dedPay = ((summary.dedRegMin/60)*dynamicRate) + ((summary.dedOtMin/60)*dynamicRate*s.otMult);
+  const hourlyRate = s.base / (daysInMonth * 8);
+  const otHourlyRate = Math.round(hourlyRate * s.otMult * 100) / 100;
   
-  const gross = basePay + s.food - absentDed + otPay + addPay - dedPay;
-  const wasteLoss = (summary.totalWasteMins/60) * dynamicRate * s.otMult;
+  const bufferDays = Math.max(0, daysInMonth - 30);
+  const billableAbsences = Math.max(0, summary.absences - bufferDays);
+  
+  let absentDed = billableAbsences * 8 * hourlyRate;
+  let shortShiftDed = (summary.shortShiftMins / 60) * hourlyRate;
+  
+  const standardBasicHrs = (daysInMonth - summary.absences) * 8;
+  const extraBasicHrs = summary.addRegMin / 60; 
+  const totalBasicHrsEarned = standardBasicHrs + extraBasicHrs;
+  
+  let basicSurplus = totalBasicHrsEarned - 240;
+  let waivedShortShiftMins = 0;
+  let waivedAbsentHrs = 0;
 
-  return { daysInMonth, dynamicRate, basePay, absentDed, otPay, addPay, dedPay, gross, wasteLoss };
+  if (basicSurplus > 0) {
+     const shortShiftHrs = summary.shortShiftMins / 60;
+     if (basicSurplus >= shortShiftHrs) {
+        waivedShortShiftMins = summary.shortShiftMins;
+        basicSurplus -= shortShiftHrs;
+        shortShiftDed = 0;
+     } else {
+        waivedShortShiftMins = basicSurplus * 60;
+        shortShiftDed -= (basicSurplus * hourlyRate);
+        basicSurplus = 0;
+     }
+     
+     const absentHrs = billableAbsences * 8;
+     if (basicSurplus >= absentHrs) {
+        waivedAbsentHrs = absentHrs;
+        basicSurplus -= absentHrs;
+        absentDed = 0;
+     } else {
+        waivedAbsentHrs = basicSurplus;
+        absentDed -= (basicSurplus * hourlyRate);
+        basicSurplus = 0;
+     }
+  }
+
+  const basePay = s.base;
+  const otPay = (summary.otMin / 60) * otHourlyRate;
+  const addPay = (summary.addOtMin / 60) * otHourlyRate;
+  const dedPay = ((summary.dedRegMin / 60) * hourlyRate) + ((summary.dedOtMin / 60) * otHourlyRate);
+  
+  // Notice: holidayOtBonus is NOT added to gross, because the payslip proved Sahl only pays the actual Overtime column.
+  const gross = basePay + s.food - absentDed + otPay + addPay - shortShiftDed - dedPay;
+  const wasteLoss = (summary.totalWasteMins / 60) * otHourlyRate;
+  
+  const totalOtHrs = (summary.otMin + summary.addOtMin - summary.dedOtMin) / 60;
+
+  return { 
+    daysInMonth, dynamicRate: hourlyRate, otHourlyRate, basePay, billableAbsences, absentDed, 
+    otPay, addPay, holidayOtBonus: 0, shortShiftDed, dedPay, gross, wasteLoss, 
+    totalBasicHrs: totalBasicHrsEarned, totalOtHrs,
+    waivedShortShiftMins, waivedAbsentHrs
+  };
 }
 
 function recomputePay(summary){
@@ -297,23 +373,40 @@ function recomputePay(summary){
   }
 
   const details = calculatePayDetails(summary, state.activeMonth);
-  const { dynamicRate, basePay, absentDed, otPay, addPay, dedPay, gross, wasteLoss, daysInMonth } = details;
+  const { dynamicRate, otHourlyRate, basePay, billableAbsences, absentDed, otPay, addPay, holidayOtBonus, shortShiftDed, dedPay, gross, wasteLoss, daysInMonth, totalBasicHrs, totalOtHrs, waivedShortShiftMins, waivedAbsentHrs } = details;
 
   const rows = [
+    [`<span style="color:var(--amber)">Total Basic Hours (Earned)</span>`, `<span style="color:var(--amber)">${totalBasicHrs.toFixed(1)}h</span>`],
+    [`<span style="color:var(--amber)">Total OT Hours</span>`, `<span style="color:var(--amber)">${totalOtHrs.toFixed(2)}h</span>`],
     [`Base Salary (Fixed)`, basePay],
     [`Food Allowance`, s.food]
   ];
-  if (summary.absences > 0) rows.push([`<span style="color:var(--bad)">Absence Deduction · ${summary.absences} days</span>`, -absentDed]);
-  rows.push([`Overtime · ${fmtHM(summary.otMin)} × ${dynamicRate.toFixed(2)}×${s.otMult}`, otPay]);
+  if (billableAbsences > 0) {
+    if (waivedAbsentHrs > 0) {
+      rows.push([`<span style="color:var(--good)">Absence Forgiven · ${waivedAbsentHrs/8} days (Covered by extra basic)</span>`, 0]);
+    }
+    if (absentDed > 0) {
+      rows.push([`<span style="color:var(--bad)">Absence Deduction</span>`, -absentDed]);
+    }
+  }
+  if (summary.shortShiftMins > 0) {
+    if (waivedShortShiftMins > 0) {
+      rows.push([`<span style="color:var(--good)">Short Shift Forgiven · ${fmtHM(waivedShortShiftMins)} (Covered by extra basic)</span>`, 0]);
+    }
+    if (shortShiftDed > 0) {
+      rows.push([`<span style="color:var(--bad)">Short Shift Deduction</span>`, -shortShiftDed]);
+    }
+  }
   
-  if (summary.addRegMin > 0) rows.push([`Additional Reg · ${fmtHM(summary.addRegMin)}`, (summary.addRegMin/60)*dynamicRate]);
-  if (summary.addOtMin > 0) rows.push([`Additional OT · ${fmtHM(summary.addOtMin)}`, (summary.addOtMin/60)*dynamicRate*s.otMult]);
+  rows.push([`Overtime · ${fmtHM(summary.otMin)} × ${otHourlyRate.toFixed(2)}`, otPay]);
+  
+  if (summary.addOtMin > 0) rows.push([`Additional OT · ${fmtHM(summary.addOtMin)}`, addPay]);
   
   if (summary.dedRegMin > 0) rows.push([`<span style="color:var(--bad)">Sahl Deduction (Reg) · ${fmtHM(summary.dedRegMin)}</span>`, -((summary.dedRegMin/60)*dynamicRate)]);
-  if (summary.dedOtMin > 0) rows.push([`<span style="color:var(--bad)">Sahl Deduction (OT) · ${fmtHM(summary.dedOtMin)}</span>`, -((summary.dedOtMin/60)*dynamicRate*s.otMult)]);
+  if (summary.dedOtMin > 0) rows.push([`<span style="color:var(--bad)">Sahl Deduction (OT) · ${fmtHM(summary.dedOtMin)}</span>`, -((summary.dedOtMin/60)*otHourlyRate)]);
 
   let html = rows.map(([label,val])=> `
-    <div class="row"><span>${label}</span><span style="${val < 0 ? 'color:var(--bad)' : ''}">${val < 0 ? '-' : ''}${Math.abs(val).toFixed(2)} SAR</span></div>
+    <div class="row"><span>${label}</span><span style="${val < 0 ? 'color:var(--bad)' : ''}">${val === 0 ? '' : val < 0 ? '-' : ''}${val === 0 ? '—' : Math.abs(val).toFixed(2) + ' SAR'}</span></div>
   `).join('');
 
   if (summary.totalWasteMins > 0) {
@@ -325,7 +418,7 @@ function recomputePay(summary){
   }
 
   box.innerHTML = html + `<div class="row total"><span>Estimated gross</span><span>${gross.toFixed(2)} SAR</span></div>
-  <p class="pay-note">Calculated using Fixed Base + OT - Absences. Hourly rate (${dynamicRate.toFixed(2)} SAR) calculated dynamically for ${daysInMonth} days.</p>`;
+  <p class="pay-note">Calculated using Fixed Base + OT - Absences. OT Rate (${otHourlyRate.toFixed(2)} SAR) calculated precisely for ${daysInMonth} days.</p>`;
 }
 
 /* =========================================================
